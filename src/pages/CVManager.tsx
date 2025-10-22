@@ -98,7 +98,7 @@ const CVManager: React.FC = () => {
     setViewDialogOpen(true);
   };
 
-  const categories = Array.from(new Set(cvs.map((cv) => cv.category).filter(Boolean)));
+  const categories = Array.from(new Set(cvs.map((cv) => cv.category).filter((c): c is string => Boolean(c))));
 
   if (loading) {
     return (

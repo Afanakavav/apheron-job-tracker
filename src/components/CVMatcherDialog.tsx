@@ -21,7 +21,6 @@ import {
   CheckCircle,
   Warning,
   Lightbulb,
-  Close as CloseIcon,
   Psychology,
 } from '@mui/icons-material';
 import { analyzeCVMatch } from '../services/aiService';

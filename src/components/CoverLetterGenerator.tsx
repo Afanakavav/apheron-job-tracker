@@ -26,9 +26,7 @@ interface CoverLetterGeneratorProps {
   onClose: () => void;
   cvText: string;
   jobDescription: string;
-  company
-
-Name: string;
+  companyName: string;
   jobTitle: string;
   onSave?: (coverLetter: string) => void;
 }

@@ -282,7 +282,7 @@ Focus on information useful for job applications and interviews. If you don't ha
  * Note: This is a placeholder. In production, you'd use a PDF parsing library
  * or Firebase Cloud Function with PDF.js
  */
-export async function extractCVText(cvUrl: string): Promise<string> {
+export async function extractCVText(_cvUrl: string): Promise<string> {
   // For now, return a placeholder
   // In production, implement PDF text extraction
   console.warn('CV text extraction not yet implemented. Please copy-paste CV text manually.');

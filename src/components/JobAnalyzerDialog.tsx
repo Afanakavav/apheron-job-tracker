@@ -21,7 +21,6 @@ import {
   Work,
   School,
   TrendingUp,
-  LocationOn,
   AttachMoney,
 } from '@mui/icons-material';
 import { analyzeJobDescription } from '../services/aiService';
