@@ -15,6 +15,11 @@ service cloud.firestore {
     // Users collection - ogni utente può leggere/scrivere solo i propri dati
     match /users/{userId} {
       allow read, write: if isOwner(userId);
+      
+      // Gmail tokens subcollection - ogni utente può gestire i propri token
+      match /gmail_tokens/{tokenId} {
+        allow read, write: if isOwner(userId);
+      }
     }
     
     // CVs collection
