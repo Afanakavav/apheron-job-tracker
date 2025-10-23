@@ -53,6 +53,14 @@
     ],
     "cleanUrls": true
   },
+  "_comment_redirects": "UNCOMMENT AFTER jobs.apheron.io IS VERIFIED",
+  "_redirects_disabled": [
+    {
+      "source": "**",
+      "destination": "https://jobs.apheron.io",
+      "type": 301
+    }
+  ],
   "storage": {
     "rules": "storage.rules"
   }

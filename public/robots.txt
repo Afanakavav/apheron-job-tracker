@@ -1,0 +1,13 @@
+# Apheron Job Tracker - Robots.txt
+# https://jobs.apheron.io
+
+User-agent: *
+Allow: /
+
+# Disallow authentication pages
+Disallow: /login
+Disallow: /register
+
+# Sitemap
+Sitemap: https://jobs.apheron.io/sitemap.xml
+
