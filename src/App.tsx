@@ -1,17 +1,17 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { useEffect } from 'react';
+import { ThemeProvider, createTheme, CssBaseline, CircularProgress, Box } from '@mui/material';
+import { useEffect, lazy, Suspense } from 'react';
 
-// Pages
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Applications from './pages/Applications';
-import CVManager from './pages/CVManager';
-import Analytics from './pages/Analytics';
-import AIAssistant from './pages/AIAssistant';
-import Settings from './pages/Settings';
+// Pages - Lazy loaded
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Applications = lazy(() => import('./pages/Applications'));
+const CVManager = lazy(() => import('./pages/CVManager'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const AIAssistant = lazy(() => import('./pages/AIAssistant'));
+const Settings = lazy(() => import('./pages/Settings'));
 
-// Components
+// Components - Loaded immediately (small size)
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 
@@ -20,6 +20,20 @@ import { AuthProvider } from './contexts/AuthContext';
 
 // Analytics
 import { initGA, trackPageView } from './services/googleAnalytics';
+
+// Loading component
+const LoadingFallback = () => (
+  <Box
+    sx={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+    }}
+  >
+    <CircularProgress />
+  </Box>
+);
 
 // Theme configuration
 const theme = createTheme({
@@ -55,70 +69,72 @@ function AppContent() {
   }, [location]);
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/applications"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Applications />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/cv-manager"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <CVManager />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Analytics />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ai-assistant"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <AIAssistant />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Settings />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/applications"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Applications />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cv-manager"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CVManager />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Analytics />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-assistant"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AIAssistant />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Settings />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 
