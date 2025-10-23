@@ -1,5 +1,5 @@
 # Apheron Job Tracker - Robots.txt
-# https://jobs.apheron.io
+# https://myjobs.apheron.io
 
 User-agent: *
 Allow: /
@@ -9,5 +9,5 @@ Disallow: /login
 Disallow: /register
 
 # Sitemap
-Sitemap: https://jobs.apheron.io/sitemap.xml
+Sitemap: https://myjobs.apheron.io/sitemap.xml
 

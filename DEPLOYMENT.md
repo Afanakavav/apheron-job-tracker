@@ -3,7 +3,7 @@
 ## 📍 Production URLs
 
 ### Primary Domain
-**https://jobs.apheron.io** ⭐  
+**https://myjobs.apheron.io** ⭐  
 *Custom domain principale*
 
 ### Fallback Domain
@@ -35,21 +35,21 @@
 ### Domain Registrar: Register.it
 **Domain:** `apheron.io`
 
-### DNS Records for jobs.apheron.io
+### DNS Records for myjobs.apheron.io
 
 ```
-Type:  CNAME
-Host:  jobs
-Value: apheron-job-tracker.web.app
-TTL:   3600
+Type:  A
+Host:  myjobs.apheron.io
+Value: 199.36.158.100
+TTL:   900
 ```
 
-**Verification Record (temporary):**
+**SSL Verification Record (ACME Challenge):**
 ```
 Type:  TXT
-Host:  _acme-challenge.jobs
-Value: [provided by Firebase during setup]
-TTL:   3600
+Host:  _acme-challenge.myjobs.apheron.io
+Value: x0vvqjGa_Bwhpbi5vyEDtvgllsFz6kPZSltWBcfYPho
+TTL:   900
 ```
 *Note: Can be removed after SSL is provisioned*
 
@@ -69,7 +69,7 @@ TTL:   3600
 ### GA4 Property #2: Job Tracker
 - **Property Name:** Apheron Job Tracker
 - **Property ID:** `G-XXXXXXXXX` *(to be created)*
-- **Stream:** jobs.apheron.io
+- **Stream:** myjobs.apheron.io
 - **Data Collection:** Enhanced measurement enabled
 
 ### GA4 Property #1: Main Site
@@ -137,21 +137,16 @@ apheron-job-tracker/
 
 ## 🔄 Redirect Configuration
 
-### Automatic Redirect: .web.app → jobs.apheron.io
+### Automatic Redirect: .web.app → myjobs.apheron.io
 
-**Status:** ⏳ Prepared, not yet active  
-**Activation:** After `jobs.apheron.io` is verified
+**Status:** ✅ Active (handled automatically by Firebase)  
+**Domain:** `myjobs.apheron.io` verified and SSL provisioned
 
-**In `firebase.json`:**
-```json
-"redirects": [
-  {
-    "source": "**",
-    "destination": "https://jobs.apheron.io",
-    "type": 301
-  }
-]
-```
+**Note:** Firebase Hosting automatically redirects:
+- `apheron-job-tracker.web.app` → `myjobs.apheron.io`
+- `apheron-job-tracker.firebaseapp.com` → `myjobs.apheron.io`
+
+**No manual redirect configuration needed in `firebase.json`**
 
 **Benefits:**
 - 🔍 SEO: Prevents duplicate content
@@ -210,7 +205,7 @@ HTML: No cache (SPA routing)
 ### DNS Not Propagating
 **Wait:** 5 min - 48 hours (usually 15-30 min)  
 **Check:** https://dnschecker.org  
-**Verify:** `nslookup jobs.apheron.io`
+**Verify:** `nslookup myjobs.apheron.io`
 
 ### SSL Certificate Pending
 **Normal:** Takes 24-48 hours max  
@@ -245,7 +240,8 @@ https://dnschecker.org
 | 2025-10-23 | v1.0.0 | Initial deployment | Francesco |
 | 2025-10-23 | v1.0.1 | Fix base path for root deployment | Francesco |
 | 2025-10-23 | v1.0.2 | Add robots.txt & sitemap.xml | Francesco |
-| 2025-10-23 | v1.0.3 | Configure jobs.apheron.io custom domain | Francesco |
+| 2025-10-23 | v1.0.3 | Configure myjobs.apheron.io custom domain | Francesco |
+| 2025-10-23 | v1.0.4 | SSL certificate provisioned successfully | Francesco |
 
 ---
 
@@ -267,9 +263,10 @@ https://dnschecker.org
 ## 🚀 Future Improvements
 
 ### Short Term
-- [ ] Enable redirect from .web.app to jobs.apheron.io
+- [x] Enable redirect from .web.app to myjobs.apheron.io ✅
 - [ ] Configure Google Analytics GA4
 - [ ] Add Google Search Console property
+- [ ] Update robots.txt and sitemap.xml with myjobs.apheron.io
 
 ### Medium Term
 - [ ] Code splitting for better performance
