@@ -19,6 +19,7 @@ import {
   VisibilityOff,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { GAEvents } from '../services/googleAnalytics';
 
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -48,8 +49,10 @@ const Login: React.FC = () => {
     try {
       if (isLogin) {
         await login(email, password);
+        GAEvents.login('email');
       } else {
         await signup(email, password, displayName);
+        GAEvents.signup('email');
       }
       navigate('/dashboard');
     } catch (err: any) {
@@ -65,6 +68,7 @@ const Login: React.FC = () => {
 
     try {
       await loginWithGoogle();
+      GAEvents.login('google');
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Si è verificato un errore');

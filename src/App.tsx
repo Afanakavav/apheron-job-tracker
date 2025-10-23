@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { useEffect } from 'react';
 
 // Pages
 import Login from './pages/Login';
@@ -16,6 +17,9 @@ import Layout from './components/Layout';
 
 // Contexts
 import { AuthProvider } from './contexts/AuthContext';
+
+// Analytics
+import { initGA, trackPageView } from './services/googleAnalytics';
 
 // Theme configuration
 const theme = createTheme({
@@ -41,75 +45,95 @@ const theme = createTheme({
   },
 });
 
+// Component to track page views
+function AppContent() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Track page view on route change
+    trackPageView(location.pathname + location.search);
+  }, [location]);
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/applications"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Applications />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cv-manager"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <CVManager />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Analytics />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ai-assistant"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AIAssistant />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Settings />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+}
+
 function App() {
+  // Initialize Google Analytics on app mount
+  useEffect(() => {
+    initGA();
+    console.log('Google Analytics initialized');
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/applications"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Applications />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cv-manager"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <CVManager />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-              <Route
-                path="/analytics"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Analytics />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/ai-assistant"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <AIAssistant />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Settings />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+        <AppContent />
       </AuthProvider>
     </ThemeProvider>
   );
