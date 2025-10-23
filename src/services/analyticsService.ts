@@ -31,6 +31,7 @@ export const calculateAnalytics = (applications: Application[]): Analytics => {
     company_website: 0,
     referral: 0,
     recruiter: 0,
+    email: 0,
     other: 0,
   };
 

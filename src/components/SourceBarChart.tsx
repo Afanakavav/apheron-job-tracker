@@ -14,6 +14,7 @@ const SOURCE_LABELS: Record<JobSource, string> = {
   company_website: 'Sito Aziendale',
   referral: 'Referral',
   recruiter: 'Recruiter',
+  email: 'Email',
   other: 'Altro',
 };
 

@@ -9,6 +9,7 @@ const Applications = lazy(() => import('./pages/Applications'));
 const CVManager = lazy(() => import('./pages/CVManager'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const AIAssistant = lazy(() => import('./pages/AIAssistant'));
+const GmailIntegration = lazy(() => import('./pages/GmailIntegration'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 // Components - Loaded immediately (small size)
@@ -118,6 +119,16 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <AIAssistant />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/gmail"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <GmailIntegration />
               </Layout>
             </ProtectedRoute>
           }

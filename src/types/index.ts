@@ -50,6 +50,7 @@ export type JobSource =
   | 'company_website' 
   | 'referral' 
   | 'recruiter' 
+  | 'email'
   | 'other';
 
 export interface Application {

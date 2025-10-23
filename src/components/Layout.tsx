@@ -26,6 +26,7 @@ import {
   Description as DescriptionIcon,
   Analytics as AnalyticsIcon,
   Psychology as PsychologyIcon,
+  Email as EmailIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   AccountCircle,
@@ -75,6 +76,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { text: 'CV Manager', icon: <DescriptionIcon />, path: '/cv-manager' },
     { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
     { text: 'AI Assistant', icon: <PsychologyIcon />, path: '/ai-assistant', badge: '🤖' },
+    { text: 'Gmail Integration', icon: <EmailIcon />, path: '/gmail', badge: '📧' },
     { text: 'Impostazioni', icon: <SettingsIcon />, path: '/settings' },
   ];
 
