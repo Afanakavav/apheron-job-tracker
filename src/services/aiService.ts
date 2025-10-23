@@ -1,13 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize Gemini AI
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyDQ8iw-kQf-Des8uPiQKZYgTcqPwoZcTaw';
 
-if (!API_KEY) {
-  console.error('VITE_GEMINI_API_KEY not found in environment variables');
+if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  console.warn('VITE_GEMINI_API_KEY not found in environment variables, using fallback');
 }
 
-const genAI = new GoogleGenerativeAI(API_KEY || '');
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Models - Using Gemini 2.5 series (as suggested - newest available)
 const FLASH_MODEL = 'gemini-2.5-flash'; // Fast, efficient and free
