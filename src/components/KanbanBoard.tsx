@@ -4,6 +4,7 @@ import { Box, Paper, Typography, CircularProgress, Alert } from '@mui/material';
 import type { Application, ApplicationStatus } from '../types';
 import ApplicationCard from './ApplicationCard';
 import { updateApplicationStatus } from '../services/applicationService';
+import { GAEvents } from '../services/googleAnalytics';
 
 interface KanbanBoardProps {
   applications: Application[];
@@ -106,6 +107,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       // Update in Firebase
       await updateApplicationStatus(draggableId, destColumn);
+      
+      // Track analytics event
+      GAEvents.moveApplication(sourceColumn, destColumn);
+      
       onRefresh();
     } catch (err) {
       console.error('Error updating application status:', err);

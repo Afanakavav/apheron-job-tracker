@@ -20,6 +20,7 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { generateCoverLetter } from '../services/aiService';
+import { GAEvents } from '../services/googleAnalytics';
 
 interface CoverLetterGeneratorProps {
   open: boolean;
@@ -66,6 +67,10 @@ const CoverLetterGenerator: React.FC<CoverLetterGeneratorProps> = ({
       );
       
       console.log('Cover letter generated');
+      
+      // Track analytics event
+      GAEvents.generateCoverLetter();
+      
       setCoverLetter(result);
     } catch (err: any) {
       console.error('Error generating cover letter:', err);

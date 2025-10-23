@@ -24,6 +24,7 @@ import {
   AttachMoney,
 } from '@mui/icons-material';
 import { analyzeJobDescription } from '../services/aiService';
+import { GAEvents } from '../services/googleAnalytics';
 
 interface JobAnalyzerDialogProps {
   open: boolean;
@@ -64,6 +65,9 @@ const JobAnalyzerDialog: React.FC<JobAnalyzerDialogProps> = ({
       
       const result = await analyzeJobDescription(jobDescription);
       console.log('Analysis complete:', result);
+      
+      // Track analytics event
+      GAEvents.analyzeJob();
       
       setAnalysis(result);
       

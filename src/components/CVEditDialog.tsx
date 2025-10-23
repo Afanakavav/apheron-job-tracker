@@ -12,6 +12,7 @@ import {
   Alert,
 } from '@mui/material';
 import { updateCV } from '../services/cvService';
+import { GAEvents } from '../services/googleAnalytics';
 import type { CV } from '../types';
 
 interface CVEditDialogProps {
@@ -71,6 +72,9 @@ const CVEditDialog: React.FC<CVEditDialogProps> = ({
         description: description || undefined,
         tags,
       });
+      
+      // Track analytics event
+      GAEvents.updateCV();
 
       onSuccess();
       onClose();

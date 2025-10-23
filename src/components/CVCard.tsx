@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { GAEvents } from '../services/googleAnalytics';
 import type { CV } from '../types';
 
 interface CVCardProps {
@@ -48,6 +49,9 @@ const CVCard: React.FC<CVCardProps> = ({ cv, onEdit, onDelete, onView }) => {
   };
 
   const handleView = () => {
+    // Track analytics event
+    GAEvents.viewCV();
+    
     onView(cv);
     handleMenuClose();
   };
@@ -59,6 +63,9 @@ const CVCard: React.FC<CVCardProps> = ({ cv, onEdit, onDelete, onView }) => {
 
   const handleDelete = () => {
     if (window.confirm(`Sei sicuro di voler eliminare "${cv.name}"?`)) {
+      // Track analytics event
+      GAEvents.deleteCV();
+      
       onDelete(cv);
     }
     handleMenuClose();

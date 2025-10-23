@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserCVs } from '../services/cvService';
+import { GAEvents } from '../services/googleAnalytics';
 import type { Application, ApplicationFormData, ApplicationStatus, JobSource, CV } from '../types';
 
 interface ApplicationFormDialogProps {
@@ -125,6 +126,13 @@ const ApplicationFormDialog: React.FC<ApplicationFormDialogProps> = ({
   };
 
   const handleSubmit = () => {
+    // Track analytics event
+    if (application) {
+      GAEvents.updateApplication(formData.status);
+    } else {
+      GAEvents.createApplication(formData.status);
+    }
+    
     onSubmit(formData);
     onClose();
   };

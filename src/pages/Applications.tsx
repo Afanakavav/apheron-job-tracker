@@ -17,6 +17,7 @@ import {
   updateApplication,
   deleteApplication,
 } from '../services/applicationService';
+import { GAEvents } from '../services/googleAnalytics';
 import type { Application, ApplicationFormData } from '../types';
 
 const Applications: React.FC = () => {
@@ -79,6 +80,10 @@ const Applications: React.FC = () => {
 
     try {
       await deleteApplication(applicationId);
+      
+      // Track analytics event
+      GAEvents.deleteApplication();
+      
       await fetchApplications();
     } catch (err) {
       console.error('Error deleting application:', err);

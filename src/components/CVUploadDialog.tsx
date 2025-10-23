@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { CloudUpload, Description } from '@mui/icons-material';
 import { uploadCVFile, createCV, validateCVFile } from '../services/cvService';
+import { GAEvents } from '../services/googleAnalytics';
 
 interface CVUploadDialogProps {
   open: boolean;
@@ -103,6 +104,9 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
       });
 
       console.log('CV record created in Firestore');
+      
+      // Track analytics event
+      GAEvents.uploadCV(file.type);
 
       // Reset form
       setFile(null);

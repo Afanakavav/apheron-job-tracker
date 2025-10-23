@@ -24,6 +24,7 @@ import {
   Psychology,
 } from '@mui/icons-material';
 import { analyzeCVMatch } from '../services/aiService';
+import { GAEvents } from '../services/googleAnalytics';
 
 interface CVMatcherDialogProps {
   open: boolean;
@@ -63,6 +64,9 @@ const CVMatcherDialog: React.FC<CVMatcherDialogProps> = ({
       
       const result = await analyzeCVMatch(cvText, jobDescription);
       console.log('Analysis complete:', result);
+      
+      // Track analytics event
+      GAEvents.useCVMatcher(result.score);
       
       setAnalysis(result);
     } catch (err: any) {

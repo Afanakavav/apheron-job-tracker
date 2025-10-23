@@ -26,6 +26,7 @@ import {
   Category,
 } from '@mui/icons-material';
 import { researchCompany } from '../services/aiService';
+import { GAEvents } from '../services/googleAnalytics';
 
 interface CompanyResearchDialogProps {
   open: boolean;
@@ -64,6 +65,9 @@ const CompanyResearchDialog: React.FC<CompanyResearchDialogProps> = ({
       
       const result = await researchCompany(companyName, additionalContext);
       console.log('Research complete:', result);
+      
+      // Track analytics event
+      GAEvents.researchCompany();
       
       setResearch(result);
     } catch (err: any) {
