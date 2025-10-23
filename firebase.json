@@ -45,13 +45,6 @@
         ]
       }
     ],
-    "redirects": [
-      {
-        "source": "**",
-        "destination": "https://jobs.apheron.io",
-        "type": 301
-      }
-    ],
     "rewrites": [
       {
         "source": "**",
