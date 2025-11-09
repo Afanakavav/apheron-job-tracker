@@ -23,6 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
 # Firebase
 .firebase/
 .firebaserc
@@ -30,10 +35,11 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 
-# Environment variables
-.env
-.env.local
-.env.production
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
 
-# Firebase config (da rimuovere se vuoi committare il config)
-# src/services/firebase.ts
+# Build outputs
+build/
+*.tsbuildinfo

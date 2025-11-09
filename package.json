@@ -6,12 +6,23 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:e2e": "playwright test tests/e2e",
+    "test:extension": "playwright test tests/chrome-extension",
+    "test:ci": "playwright test --project=chromium --reporter=html"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.0.4",
+    "playwright": "^1.56.1",
+    "sharp": "^0.34.5",
     "typescript": "~5.9.3",
     "vite": "^7.1.7"
   },
@@ -24,12 +35,19 @@
     "@mui/material": "^7.3.4",
     "@react-oauth/google": "^0.12.2",
     "date-fns": "^4.1.0",
+    "docx": "^9.5.1",
     "firebase": "^12.4.0",
     "googleapis": "^164.1.0",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "jspdf": "^3.0.3",
+    "mammoth": "^1.11.0",
+    "pdfjs-dist": "^3.11.174",
+    "quill": "^2.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-ga4": "^2.1.0",
     "react-hook-form": "^7.65.0",
+    "react-quill": "^2.0.0",
     "react-router-dom": "^7.9.4",
     "recharts": "^3.3.0"
   }
