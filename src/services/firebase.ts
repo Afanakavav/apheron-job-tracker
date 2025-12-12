@@ -8,14 +8,15 @@ import { getFunctions } from "firebase/functions";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// IMPORTANT: Never commit real API keys! Use environment variables.
 const firebaseConfig = {
-  apiKey: "AIzaSyCGoXvIg-Taemqebqe_AxSL7aAtwfFxy_w",
-  authDomain: "apheron-job-tracker.firebaseapp.com",
-  projectId: "apheron-job-tracker",
-  storageBucket: "apheron-job-tracker.firebasestorage.app",
-  messagingSenderId: "812993750047",
-  appId: "1:812993750047:web:828f3feca930a509d7612a",
-  measurementId: "G-Z3HM95PNET"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "apheron-job-tracker.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "apheron-job-tracker",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "apheron-job-tracker.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "812993750047",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:812993750047:web:828f3feca930a509d7612a",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-Z3HM95PNET"
 };
 
 // Initialize Firebase
@@ -26,6 +27,7 @@ export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const functions = getFunctions(app);
+// Ensure we use the same region where Cloud Functions are deployed
+export const functions = getFunctions(app, 'europe-west1');
 
 export default app;
