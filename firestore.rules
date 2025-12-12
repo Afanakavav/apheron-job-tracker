@@ -20,6 +20,46 @@ service cloud.firestore {
       match /gmail_tokens/{tokenId} {
         allow read, write: if isOwner(userId);
       }
+      
+      // Calendar tokens subcollection - ogni utente può gestire i propri token
+      match /calendar_tokens/{tokenId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Settings subcollection - ogni utente può gestire le proprie impostazioni
+      match /settings/{settingId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Import history subcollection - ogni utente può gestire la propria cronologia
+      match /import_history/{historyId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Saved jobs subcollection - ogni utente può gestire le proprie posizioni salvate
+      match /saved_jobs/{jobId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Job alerts subcollection - ogni utente può gestire i propri alert
+      match /job_alerts/{alertId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Contacts subcollection - ogni utente può gestire i propri contatti
+      match /contacts/{contactId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Contact notes subcollection - ogni utente può gestire le proprie note
+      match /contact_notes/{noteId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Networking events subcollection - ogni utente può gestire i propri eventi
+      match /networking_events/{eventId} {
+        allow read, write: if isOwner(userId);
+      }
     }
     
     // CVs collection
@@ -36,15 +76,25 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
-    // Companies collection
-    match /companies/{companyId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    // Archived applications collection
+    match /archived_applications/{archivedId} {
+      // Read: allow if authenticated (we'll verify userId in application code)
+      // This allows reading documents that might not have userId yet (old archives)
+      allow read: if isAuthenticated();
+      
+      // Create: must have userId matching authenticated user
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Update, Delete: must have userId matching authenticated user
+      // Allow delete if userId matches OR if userId field doesn't exist (old documents need migration)
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || 
+         !('userId' in resource.data));
     }
     
-    // Contacts collection
-    match /contacts/{contactId} {
+    // Companies collection
+    match /companies/{companyId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
@@ -57,11 +107,34 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
+    // Workflows collection
+    match /workflows/{workflowId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Email notifications collection
+    match /email_notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
     // Saved searches collection
     match /saved_searches/{searchId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Sent emails collection
+    match /sent_emails/{emailId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // No update - emails are read-only after creation
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
   }
 }

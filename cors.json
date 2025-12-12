@@ -1,0 +1,9 @@
+[
+  {
+    "origin": ["https://myjobs.apheron.io", "https://apheron-job-tracker.web.app", "https://apheron-job-tracker.firebaseapp.com"],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "User-Agent", "X-Requested-With"]
+  }
+]
+

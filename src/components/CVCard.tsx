@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Card,
   CardContent,
@@ -6,23 +6,25 @@ import {
   Typography,
   Box,
   Chip,
-  IconButton,
-  Menu,
-  MenuItem,
   Button,
+  Tooltip,
 } from '@mui/material';
 import {
   Description,
-  MoreVert,
-  Download,
   Visibility,
-  Edit,
   Delete,
   CloudDownload,
+  Work,
+  Info,
+  ContentCopy,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { useTranslation } from '../hooks/useTranslation';
 import { GAEvents } from '../services/googleAnalytics';
+import { getDocumentIcon } from '../utils/documentIcons';
+import { getAIDocumentColor } from '../utils/aiDocumentColors';
+import { isApplicationFolder } from '../utils/documentFolders';
 import type { CV } from '../types';
 
 interface CVCardProps {
@@ -30,45 +32,83 @@ interface CVCardProps {
   onEdit: (cv: CV) => void;
   onDelete: (cv: CV) => void;
   onView: (cv: CV) => void;
+  onDuplicate?: (cv: CV) => void;
+  linkedApplicationsCount?: number;
 }
 
-const CVCard: React.FC<CVCardProps> = ({ cv, onEdit, onDelete, onView }) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleDownload = () => {
-    window.open(cv.fileUrl, '_blank');
-    handleMenuClose();
+const CVCard: React.FC<CVCardProps> = ({ cv, onEdit, onDelete, onView, onDuplicate, linkedApplicationsCount = 0 }) => {
+  const { t } = useTranslation();
+  const documentIcon = getDocumentIcon(cv.category);
+  
+  // Check if document is in an application folder
+  const isInApplicationFolder = isApplicationFolder(cv.folder);
+  
+  // Determine if this is a CV or Cover Letter based on tags or name patterns
+  // For documents in application folders, check tags first (more reliable), then name patterns
+  const hasCoverLetterTag = cv.tags?.some(tag => 
+    tag.toLowerCase().includes('cover letter') || 
+    tag.toLowerCase() === 'cl'
+  ) || false;
+  const hasCVTag = cv.tags?.some(tag => tag.toLowerCase() === 'cv') || false;
+  
+  const isCoverLetter = isInApplicationFolder && (
+    hasCoverLetterTag ||
+    cv.name.toLowerCase().includes('cover letter') ||
+    cv.name.toLowerCase().includes('cover_letter') ||
+    cv.name.toLowerCase().includes('cl_')
+  );
+  const isCV = isInApplicationFolder && !isCoverLetter && (
+    hasCVTag ||
+    !hasCoverLetterTag // If no Cover Letter tag and in application folder, assume CV
+  );
+  
+  // Check if this is an AI document and get its color
+  const aiColor = getAIDocumentColor(cv.tags, cv.category);
+  
+  // Determine icon color (priority order):
+  // 1. AI documents → AI color (from AI function logos) - HIGHEST PRIORITY
+  // 2. CV in CV folder or application folder → #E0B341 (giallo senape)
+  // 3. Cover Letter in Cover Letter folder or application folder → #7A7A7A (grigio caldo)
+  // 4. Default → category color
+  let iconColor: string;
+  
+  // Priority 1: AI documents have highest priority
+  if (aiColor) {
+    iconColor = aiColor; // AI color (from AI function logos)
+  }
+  // Priority 2: CV (in CV folder or has CV tag in application folder)
+  else if (cv.folder === 'CV' || (isInApplicationFolder && isCV)) {
+    iconColor = '#E0B341'; // Giallo senape per CV
+  }
+  // Priority 3: Cover Letter (in Cover Letter folder or has Cover Letter tag in application folder)
+  else if (cv.folder === 'Cover Letter' || (isInApplicationFolder && isCoverLetter)) {
+    iconColor = '#7A7A7A'; // Grigio caldo per Cover Letter
+  }
+  // Priority 4: Default category color
+  else {
+    iconColor = documentIcon.color; // Default category color
+  }
+  
+  const handleDownload = async () => {
+    const { getCleanFileName, downloadFileWithCleanName } = await import('../utils/fileNameUtils');
+    const cleanFileName = getCleanFileName(cv);
+    await downloadFileWithCleanName(cv.fileUrl, cleanFileName);
   };
 
   const handleView = () => {
-    // Track analytics event
     GAEvents.viewCV();
-    
     onView(cv);
-    handleMenuClose();
   };
 
   const handleEdit = () => {
     onEdit(cv);
-    handleMenuClose();
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Sei sicuro di voler eliminare "${cv.name}"?`)) {
-      // Track analytics event
+    if (window.confirm(`${t('cvManager.deleteConfirm')} "${cv.name}"?`)) {
       GAEvents.deleteCV();
-      
       onDelete(cv);
     }
-    handleMenuClose();
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -81,35 +121,110 @@ const CVCard: React.FC<CVCardProps> = ({ cv, onEdit, onDelete, onView }) => {
     return fileName.split('.').pop()?.toUpperCase() || 'FILE';
   };
 
+  // Drag & Drop handlers for CV
+  const handleDragStart = (e: React.DragEvent) => {
+    // Only allow dragging CVs (not Cover Letters)
+    const isCV = cv.folder === 'CV' || cv.tags?.some(tag => tag.toLowerCase() === 'cv');
+    if (!isCV) {
+      e.preventDefault();
+      return;
+    }
+    
+    e.dataTransfer.setData('application/cv-id', cv.id);
+    e.dataTransfer.effectAllowed = 'copy';
+    
+    // Add visual feedback
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    // Restore visual feedback
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '1';
+  };
+
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Card 
+      sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        position: 'relative',
+        cursor: isCV ? 'grab' : 'default',
+        '&:active': {
+          cursor: isCV ? 'grabbing' : 'default',
+        },
+      }}
+      draggable={isCV}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      {/* Document Type Icon Badge */}
+      <Tooltip title={documentIcon.description} placement="top">
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 36,
+            height: 36,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '8px',
+            backgroundColor: `${iconColor}15`,
+            border: `2px solid ${iconColor}`,
+            fontSize: '20px',
+            cursor: 'help',
+            transition: 'all 0.3s',
+            '&:hover': {
+              transform: 'scale(1.1)',
+              boxShadow: `0 0 8px ${iconColor}60`,
+            }
+          }}
+        >
+          {documentIcon.icon}
+        </Box>
+      </Tooltip>
+
       <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Description sx={{ fontSize: 40, color: 'primary.main' }} />
-            <Box>
-              <Typography variant="h6" component="div" sx={{ fontSize: '1rem' }}>
-                {cv.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                v{cv.version} • {getFileExtension(cv.fileName)}
-              </Typography>
-            </Box>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2, pr: 5 }}>
+          <Description sx={{ fontSize: 40, color: iconColor }} />
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" component="div" sx={{ fontSize: '1rem' }}>
+              {cv.name}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              v{cv.version} • {getFileExtension(cv.fileName)}
+            </Typography>
           </Box>
-          <IconButton size="small" onClick={handleMenuOpen}>
-            <MoreVert />
-          </IconButton>
         </Box>
 
-        {cv.category && (
-          <Chip
-            label={cv.category}
-            size="small"
-            color="primary"
-            variant="outlined"
-            sx={{ mb: 1 }}
-          />
-        )}
+        <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+          {cv.category && (
+            <Chip
+              label={cv.category}
+              size="small"
+              sx={{
+                bgcolor: `${iconColor}15`,
+                color: iconColor,
+                borderColor: iconColor,
+                fontWeight: 600,
+              }}
+              variant="outlined"
+            />
+          )}
+          {linkedApplicationsCount > 0 && (
+            <Chip
+              icon={<Work sx={{ fontSize: 16 }} />}
+              label={`${linkedApplicationsCount} ${linkedApplicationsCount === 1 ? t('applications.total').slice(0, -1) : t('analytics.applications')}`}
+              size="small"
+              color="success"
+              variant="outlined"
+            />
+          )}
+        </Box>
 
         {cv.description && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -130,42 +245,39 @@ const CVCard: React.FC<CVCardProps> = ({ cv, onEdit, onDelete, onView }) => {
 
         <Box sx={{ mt: 2 }}>
           <Typography variant="caption" color="text.secondary">
-            {formatFileSize(cv.fileSize)} • Caricato il{' '}
-            {format(new Date(cv.createdAt), 'dd MMM yyyy', { locale: it })}
+            {formatFileSize(cv.fileSize)} • {format(new Date(cv.createdAt), 'dd MMM yyyy', { locale: it })}
           </Typography>
         </Box>
       </CardContent>
 
-      <CardActions>
+      <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <Button size="small" startIcon={<Info />} onClick={handleEdit}>
+          {t('cvManager.info')}
+        </Button>
         <Button size="small" startIcon={<Visibility />} onClick={handleView}>
-          Visualizza
+          {t('cvManager.view')}
         </Button>
         <Button size="small" startIcon={<CloudDownload />} onClick={handleDownload}>
-          Scarica
+          {t('cvManager.download')}
+        </Button>
+        {onDuplicate && (
+          <Button 
+            size="small" 
+            startIcon={<ContentCopy />} 
+            onClick={() => onDuplicate(cv)}
+            color="primary"
+            variant="outlined"
+          >
+            {t('cvManager.duplicate') || 'Duplica'}
+          </Button>
+        )}
+        <Button size="small" startIcon={<Delete />} onClick={handleDelete} color="error">
+          {t('cvManager.delete')}
         </Button>
       </CardActions>
-
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleView}>
-          <Visibility sx={{ mr: 1, fontSize: 20 }} />
-          Visualizza
-        </MenuItem>
-        <MenuItem onClick={handleDownload}>
-          <Download sx={{ mr: 1, fontSize: 20 }} />
-          Scarica
-        </MenuItem>
-        <MenuItem onClick={handleEdit}>
-          <Edit sx={{ mr: 1, fontSize: 20 }} />
-          Modifica
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <Delete sx={{ mr: 1, fontSize: 20 }} />
-          Elimina
-        </MenuItem>
-      </Menu>
     </Card>
   );
 };
 
-export default CVCard;
+export default React.memo(CVCard);
 

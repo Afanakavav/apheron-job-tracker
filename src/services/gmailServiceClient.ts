@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',  // ← ADDED: Permission to send emails
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
 ].join(' ');
@@ -191,8 +192,39 @@ export const fetchRecentEmails = async (
   try {
     const accessToken = await getValidAccessToken(userId);
 
-    // Build query for job-related emails
-    const searchQuery = query || 'subject:(job OR opportunity OR hiring OR position OR career OR opening) newer_than:30d';
+    // Build query for job-related emails using user's language
+    const getUserLanguage = (): string => {
+      const savedLang = localStorage.getItem('app_language');
+      if (savedLang) return savedLang;
+      const browserLang = navigator.language.split('-')[0];
+      return ['it', 'en'].includes(browserLang) ? browserLang : 'en';
+    };
+    
+    const buildMultilingualQuery = (): string => {
+      const userLang = getUserLanguage();
+      
+      // Import keywords dynamically (safe for service worker context)
+      const keywordSets: Record<string, string[]> = {
+        it: ['lavoro', 'opportunità', 'assunzione', 'posizione', 'carriera', 'apertura'],
+        en: ['job', 'opportunity', 'hiring', 'position', 'career', 'opening'],
+      };
+      
+      const keywords = keywordSets[userLang] || keywordSets.en;
+      const keywordQuery = keywords.join(' OR ');
+      
+      return `
+        (
+          subject:(${keywordQuery} OR LinkedIn) OR
+          from:LinkedIn OR
+          label:Jobs OR
+          {${keywords.join(' ')}}
+        )
+        newer_than:30d
+      `.replace(/\s+/g, ' ').trim();
+    };
+    
+    const defaultQuery = buildMultilingualQuery();
+    const searchQuery = query || defaultQuery;
 
     // List messages
     const listResponse = await fetch(
@@ -275,7 +307,7 @@ export const fetchRecentEmails = async (
 };
 
 /**
- * Get user email address
+ * Get user email address using userId (reads token from Firestore)
  */
 export const getGmailUserEmail = async (userId: string): Promise<string> => {
   try {
@@ -298,6 +330,33 @@ export const getGmailUserEmail = async (userId: string): Promise<string> => {
     return data.emailAddress || '';
   } catch (error: any) {
     console.error('Error getting user email:', error);
+    throw new Error(`Failed to get user email: ${error.message}`);
+  }
+};
+
+/**
+ * Get user email address directly using access token
+ * (useful when we already have the token, e.g., right after OAuth)
+ */
+export const getGmailUserEmailWithToken = async (accessToken: string): Promise<string> => {
+  try {
+    const response = await fetch(
+      'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Gmail API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.emailAddress || '';
+  } catch (error: any) {
+    console.error('Error getting user email with token:', error);
     throw new Error(`Failed to get user email: ${error.message}`);
   }
 };

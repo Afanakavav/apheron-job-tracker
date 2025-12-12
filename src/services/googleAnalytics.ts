@@ -63,6 +63,16 @@ export const GAEvents = {
   moveApplication: (fromStatus: string, toStatus: string) => {
     trackEvent('Application', 'Move', `${fromStatus} → ${toStatus}`);
   },
+  
+  sendApplicationEmail: (emailType: 'apply' | 'confirm' | 'interview_feedback' | 'feedback_request' | 'offer_accepted' | 'offer_declined') => {
+    let label = 'Application';
+    if (emailType === 'confirm') label = 'Confirmation';
+    else if (emailType === 'interview_feedback') label = 'Interview Feedback';
+    else if (emailType === 'feedback_request') label = 'Feedback Request';
+    else if (emailType === 'offer_accepted') label = 'Offer Accepted';
+    else if (emailType === 'offer_declined') label = 'Offer Declined';
+    trackEvent('Application', 'Send Email', label);
+  },
 
   // CV events
   uploadCV: (fileType: string) => {

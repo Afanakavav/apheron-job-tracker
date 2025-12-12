@@ -1,0 +1,56 @@
+/* Styles for Apheron Save Button */
+
+#apheron-save-button {
+  position: fixed !important;
+  top: 100px !important;
+  right: 20px !important;
+  z-index: 999999 !important;
+  padding: 12px 20px !important;
+  background: #1976d2 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s ease !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+#apheron-save-button:hover {
+  background: #1565c0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+#apheron-save-button:active {
+  transform: translateY(0);
+}
+
+#apheron-save-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* LinkedIn specific positioning */
+.linkedin #apheron-save-button {
+  top: 80px;
+}
+
+/* Indeed specific positioning */
+#jobDescriptionText ~ #apheron-save-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+/* Glassdoor specific */
+.jobDescriptionContent ~ #apheron-save-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}

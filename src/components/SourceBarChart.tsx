@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Paper, Typography, Box } from '@mui/material';
+import { useTranslation } from '../hooks/useTranslation';
 import type { JobSource } from '../types';
 
 interface SourceBarChartProps {
@@ -18,7 +19,9 @@ const SOURCE_LABELS: Record<JobSource, string> = {
   other: 'Altro',
 };
 
-const SourceBarChart: React.FC<SourceBarChartProps> = ({ data }) => {
+const SourceBarChart: React.FC<SourceBarChartProps> = React.memo(({ data }) => {
+  const { t } = useTranslation();
+  
   const chartData = Object.entries(data)
     .filter(([_, value]) => value > 0)
     .map(([key, value]) => ({
@@ -31,7 +34,7 @@ const SourceBarChart: React.FC<SourceBarChartProps> = ({ data }) => {
     return (
       <Paper sx={{ p: 3, height: '100%' }}>
         <Typography variant="h6" gutterBottom>
-          Candidature per Fonte
+          {t('analytics.applicationsBySource')}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
           <Typography color="text.secondary">Nessun dato disponibile</Typography>
@@ -43,7 +46,7 @@ const SourceBarChart: React.FC<SourceBarChartProps> = ({ data }) => {
   return (
     <Paper sx={{ p: 3, height: '100%' }}>
       <Typography variant="h6" gutterBottom>
-        Candidature per Fonte
+        {t('analytics.applicationsBySource')}
       </Typography>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData}>
@@ -56,7 +59,9 @@ const SourceBarChart: React.FC<SourceBarChartProps> = ({ data }) => {
       </ResponsiveContainer>
     </Paper>
   );
-};
+});
+
+SourceBarChart.displayName = 'SourceBarChart';
 
 export default SourceBarChart;
 

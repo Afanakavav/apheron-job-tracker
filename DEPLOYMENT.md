@@ -267,6 +267,10 @@ https://dnschecker.org
 - [ ] Configure Google Analytics GA4
 - [ ] Add Google Search Console property
 - [ ] Update robots.txt and sitemap.xml with myjobs.apheron.io
+- [ ] **⚠️ IMPORTANT: Configure GEMINI_API_KEY in Firebase Functions environment variables**
+  - Currently: Cloud Functions use a fallback API key (warning in deployment)
+  - Action needed: Set `GEMINI_API_KEY` in Firebase Console → Functions → Configuration → Environment variables
+  - This will allow proper deployment of Cloud Functions without warnings
 
 ### Medium Term
 - [ ] Code splitting for better performance
@@ -278,6 +282,31 @@ https://dnschecker.org
 - [ ] Chrome extension
 - [ ] Job search aggregator
 - [ ] AI-powered features enhancement
+
+---
+
+## ⚠️ Known Issues & Notes
+
+### Cloud Functions - GEMINI_API_KEY Configuration
+**Status:** ⚠️ Warning (non-blocking)  
+**Date:** 2025-01-XX
+
+**Issue:**
+- Cloud Functions deployment shows warning: `GEMINI_API_KEY not found in environment!`
+- Functions currently use a fallback API key and work correctly
+- Warning appears during `firebase deploy` but doesn't block hosting deployment
+
+**Solution:**
+1. Go to [Firebase Console](https://console.firebase.google.com/project/apheron-job-tracker/functions)
+2. Navigate to Functions → Configuration
+3. Add environment variable:
+   - **Name:** `GEMINI_API_KEY`
+   - **Value:** Your Google Gemini API key
+4. Redeploy Functions: `firebase deploy --only functions`
+
+**Impact:**
+- Current: Functions work with fallback (no breaking changes)
+- After fix: Clean deployment without warnings, better security
 
 ---
 

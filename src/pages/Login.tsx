@@ -119,6 +119,7 @@ const Login: React.FC = () => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               sx={{ mb: 2 }}
             />
             <TextField
@@ -128,6 +129,7 @@ const Login: React.FC = () => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
               sx={{ mb: 3 }}
               InputProps={{
                 endAdornment: (

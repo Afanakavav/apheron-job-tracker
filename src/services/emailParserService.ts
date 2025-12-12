@@ -1,9 +1,36 @@
+/**
+ * ⚠️ DEPRECATED - This service is being migrated to Firebase Cloud Functions
+ * 
+ * SECURITY ISSUE: This service exposes the Gemini API key in the client
+ * 
+ * MIGRATION STATUS:
+ * ✅ Cloud Function created: parseEmailForJobOffers in functions/index.js
+ * ✅ Client updated: GmailIntegration.tsx now uses Cloud Function
+ * 
+ * TODO: Remove this file after confirming Cloud Function works correctly
+ * 
+ * New usage:
+ * ```typescript
+ * import { httpsCallable } from 'firebase/functions';
+ * import { functions } from './firebase';
+ * 
+ * const parseEmailForJobOffers = httpsCallable(functions, 'parseEmailForJobOffers');
+ * const result = await parseEmailForJobOffers({ emails, userLanguage });
+ * const jobOffers = result.data.jobOffers;
+ * ```
+ */
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { GmailEmail, JobOfferFromEmail } from './gmailServiceClient';
+import { getKeywordsByLanguage } from './aiKeywordsService';
 
 // Initialize Gemini AI
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyDQ8iw-kQf-Des8uPiQKZYgTcqPwoZcTaw';
-const genAI = new GoogleGenerativeAI(API_KEY);
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+if (!API_KEY) {
+  console.warn('⚠️ VITE_GEMINI_API_KEY not found. Email parsing features will not work.');
+  console.warn('📝 This service is DEPRECATED. Use Cloud Function parseEmailForJobOffers instead.');
+}
+const genAI = new GoogleGenerativeAI(API_KEY || 'dummy-key');
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 /**
@@ -11,6 +38,13 @@ const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
  */
 export const parseJobOfferFromEmail = async (email: GmailEmail): Promise<JobOfferFromEmail | null> => {
   try {
+    // Get user's language preference
+    const savedLang = localStorage.getItem('app_language');
+    const browserLang = navigator.language.split('-')[0];
+    const userLang = savedLang || (['it', 'en'].includes(browserLang) ? browserLang : 'en');
+    
+    const keywords = getKeywordsByLanguage(userLang);
+    
     // Clean email body (remove HTML tags if present)
     const cleanBody = email.body
       .replace(/<[^>]*>/g, ' ') // Remove HTML tags
@@ -24,13 +58,25 @@ Date: ${email.date}
 
 ${cleanBody.substring(0, 5000)}`; // Limit to 5000 chars
     
+    // Build multilingual prompt
+    const languageName = {
+      'it': 'Italian',
+      'en': 'English'
+    }[userLang] || 'English';
+    
     const prompt = `
 Analyze this email and determine if it contains a job offer or job opportunity.
+IMPORTANT: This email is likely in ${languageName.toUpperCase()}. Use language-appropriate keywords for detection.
 
 Email:
 ---
 ${emailContent}
 ---
+
+LANGUAGE-SPECIFIC KEYWORDS FOR DETECTION (${languageName}):
+Job Keywords: ${keywords.jobKeywords.join(', ')}
+Action Keywords: ${keywords.actionKeywords.join(', ')}
+Location Keywords: ${keywords.locationKeywords.join(', ')}
 
 If this email contains a job opportunity, extract the following information in JSON format:
 {
@@ -53,12 +99,15 @@ If this email does NOT contain a job opportunity, respond with:
 }
 
 Guidelines:
+- Search for the keywords listed above in the email content
 - Consider newsletters, automated emails, or promotional content as job offers if they contain specific job openings
-- Job titles from companies like LinkedIn, Indeed, Glassdoor are valid
+- Job alerts from LinkedIn, Indeed, Glassdoor, and job boards are VALID (they contain specific positions)
+- LinkedIn job alerts are ALWAYS valid job offers
 - Internal communications about open positions are valid
 - General career advice emails are NOT job offers
 - Marketing emails without specific positions are NOT job offers
-- Be strict but not overly conservative
+- Application confirmations ("We received your application") are NOT job offers
+- Be moderately strict but not overly conservative
 
 Respond ONLY with valid JSON, no additional text.
 `;

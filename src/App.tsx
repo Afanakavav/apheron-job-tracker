@@ -1,76 +1,98 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline, CircularProgress, Box } from '@mui/material';
+import { Box, Skeleton } from '@mui/material';
 import { useEffect, lazy, Suspense } from 'react';
 
 // Pages - Lazy loaded
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Applications = lazy(() => import('./pages/Applications'));
+const Archived = lazy(() => import('./pages/Archived'));
+const Calendar = lazy(() => import('./pages/Calendar'));
 const CVManager = lazy(() => import('./pages/CVManager'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const AIAssistant = lazy(() => import('./pages/AIAssistant'));
 const GmailIntegration = lazy(() => import('./pages/GmailIntegration'));
+const JobSearch = lazy(() => import('./pages/JobSearch'));
+const Networking = lazy(() => import('./pages/Networking'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 // Components - Loaded immediately (small size)
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
+import { OnboardingTour, useOnboarding } from './components/OnboardingTour';
 
 // Contexts
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeContextProvider } from './contexts/ThemeContext';
 
 // Analytics
 import { initGA, trackPageView } from './services/googleAnalytics';
 
-// Loading component
+// Loading component with skeleton
 const LoadingFallback = () => (
   <Box
     sx={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
+      p: 3,
       minHeight: '100vh',
     }}
   >
-    <CircularProgress />
+    <Skeleton variant="text" width="40%" height={40} sx={{ mb: 3 }} />
+    <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: 1, mb: 2 }} />
+    <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: 1 }} />
   </Box>
 );
-
-// Theme configuration
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-  },
-});
 
 // Component to track page views
 function AppContent() {
   const location = useLocation();
+  const { showOnboarding, setShowOnboarding } = useOnboarding();
 
   useEffect(() => {
     // Track page view on route change
     trackPageView(location.pathname + location.search);
   }, [location]);
+  
+  // Prefetch commonly accessed routes for better performance
+  useEffect(() => {
+    // Prefetch likely next routes after initial load
+    const timer = setTimeout(() => {
+      // Prefetch common routes (excluding current route)
+      const commonRoutes = ['/dashboard', '/applications', '/analytics', '/cv-manager', '/networking'];
+      commonRoutes.forEach((route) => {
+        if (route !== location.pathname) {
+          // Dynamically import to prefetch
+          switch (route) {
+            case '/dashboard':
+              import('./pages/Dashboard');
+              break;
+            case '/applications':
+              import('./pages/Applications');
+              break;
+            case '/analytics':
+              import('./pages/Analytics');
+              break;
+            case '/cv-manager':
+              import('./pages/CVManager');
+              break;
+            case '/networking':
+              import('./pages/Networking');
+              break;
+          }
+        }
+      });
+    }, 2000); // Prefetch after 2 seconds to not interfere with initial load
+
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   return (
     <Suspense fallback={<LoadingFallback />}>
+      <OnboardingTour
+        open={showOnboarding}
+        onComplete={() => setShowOnboarding(false)}
+        onSkip={() => setShowOnboarding(false)}
+      />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
@@ -89,6 +111,26 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <Applications />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/archived"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Archived />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Calendar />
               </Layout>
             </ProtectedRoute>
           }
@@ -134,6 +176,26 @@ function AppContent() {
           }
         />
         <Route
+          path="/job-search"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <JobSearch />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/networking"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Networking />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/settings"
           element={
             <ProtectedRoute>
@@ -152,17 +214,22 @@ function AppContent() {
 function App() {
   // Initialize Google Analytics on app mount
   useEffect(() => {
-    initGA();
-    console.log('Google Analytics initialized');
+    try {
+      initGA();
+      console.log('✅ Google Analytics initialized');
+    } catch (error) {
+      console.error('❌ Error initializing Google Analytics:', error);
+    }
   }, []);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeContextProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeContextProvider>
+    </ErrorBoundary>
   );
 }
 

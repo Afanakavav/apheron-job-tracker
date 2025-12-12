@@ -1,3 +1,60 @@
+// ==================== JOB SEARCH TYPES ====================
+export interface JobPosting {
+  id: string;
+  userId?: string; // Only if saved by user
+  title: string;
+  company: string;
+  location?: string;
+  isRemote?: boolean;
+  salary?: {
+    min?: number;
+    max?: number;
+    currency?: string;
+    period?: 'hourly' | 'monthly' | 'yearly';
+  };
+  description: string;
+  requirements?: string[];
+  benefits?: string[];
+  jobUrl: string;
+  source: 'linkedin' | 'indeed' | 'glassdoor' | 'manual' | 'other';
+  postedDate?: Date;
+  applicationDeadline?: Date;
+  employmentType?: 'full-time' | 'part-time' | 'contract' | 'internship' | 'temporary';
+  experienceLevel?: 'entry' | 'mid' | 'senior' | 'executive';
+  savedAt?: Date;
+  appliedAt?: Date;
+  applicationId?: string; // Link to Application if user applied
+  tags?: string[];
+  matchScore?: number; // 0-100, how well it matches user preferences
+  notes?: string;
+}
+
+export interface JobSearchPreferences {
+  keywords: string[];
+  location?: string;
+  isRemote?: boolean;
+  salaryMin?: number;
+  salaryCurrency?: string;
+  employmentType?: ('full-time' | 'part-time' | 'contract' | 'internship')[];
+  experienceLevel?: ('entry' | 'mid' | 'senior' | 'executive')[];
+  industries?: string[];
+  companies?: string[];
+  excludeCompanies?: string[];
+  alertEnabled?: boolean;
+  alertFrequency?: 'daily' | 'weekly' | 'realtime';
+}
+
+export interface JobAlert {
+  id: string;
+  userId: string;
+  name: string;
+  preferences: JobSearchPreferences;
+  lastChecked?: Date;
+  lastNotification?: Date;
+  enabled: boolean;
+  createdAt: Date;
+}
+
 // ==================== USER TYPES ====================
 export interface User {
   uid: string;
@@ -16,6 +73,22 @@ export interface UserSettings {
 }
 
 // ==================== CV TYPES ====================
+export interface CVVersion {
+  version: number;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  savedAt: Date;
+}
+
+// Folder types for document organization
+export type DocumentFolder = 
+  | 'CV'
+  | 'Cover Letter'
+  | 'Documenti generali'
+  | 'Documenti AI'
+  | string; // Application folder format: "{company} - {jobTitle}"
+
 export interface CV {
   id: string;
   userId: string;
@@ -25,8 +98,11 @@ export interface CV {
   fileSize: number;
   tags: string[];
   category?: string; // es: "Tech", "Marketing", "General"
+  folder: DocumentFolder; // Folder where document is stored (required)
   version: number;
   description?: string;
+  applicationIds?: string[]; // IDs of applications this CV was used for
+  versions?: CVVersion[]; // Array di versioni precedenti (max 5)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,13 +111,12 @@ export interface CV {
 export type ApplicationStatus = 
   | 'saved' 
   | 'applied' 
-  | 'phone_screen' 
-  | 'interview' 
-  | 'technical' 
+  | 'interview_1' 
+  | 'interview_2' 
+  | 'interview_3' 
+  | 'interview_4' 
   | 'offer' 
-  | 'rejected' 
-  | 'withdrawn'
-  | 'archived';
+  | 'rejected';
 
 export type JobSource = 
   | 'linkedin' 
@@ -52,6 +127,13 @@ export type JobSource =
   | 'recruiter' 
   | 'email'
   | 'other';
+
+export interface InterviewDate {
+  date: Date;
+  type: 'interview_1' | 'interview_2' | 'interview_3' | 'interview_4'; // Maps to ApplicationStatus
+  notes?: string;
+  googleCalendarEventId?: string; // ID of the event in Google Calendar (if synced)
+}
 
 export interface Application {
   id: string;
@@ -75,20 +157,25 @@ export interface Application {
   status: ApplicationStatus;
   source: JobSource;
   cvId?: string; // quale CV è stato usato
-  coverLetter?: string;
+  coverLetter?: string; // Testo della cover letter (legacy)
+  coverLetterId?: string; // ID della Cover Letter da CV Manager
   
   // Contacts
   recruiterName?: string;
   recruiterEmail?: string;
   recruiterLinkedin?: string;
+  companyEmail?: string; // Company contact email for applications
   
   // Dates
-  appliedDate?: Date;
+  appliedDate?: Date; // Auto-set when status changes to 'applied'
+  followUpEnabled?: boolean; // User-controlled follow-up toggle
   lastFollowUpDate?: Date;
   nextFollowUpDate?: Date;
   responseDate?: Date;
-  interviewDate?: Date;
-  offerDate?: Date;
+  interviewDate?: Date; // Deprecated, use interviewDates
+  interviewDates?: InterviewDate[]; // Multiple interview dates
+  offerDate?: Date; // Auto-set when status changes to 'offer'
+  rejectedDate?: Date; // Auto-set when status changes to 'rejected'
   
   // Notes & Tags
   notes?: string;
@@ -136,6 +223,8 @@ export interface Company {
 }
 
 // ==================== CONTACT TYPES ====================
+export type ContactType = 'recruiter' | 'hiring_manager' | 'referral' | 'hr' | 'other';
+
 export interface Contact {
   id: string;
   userId: string;
@@ -145,12 +234,58 @@ export interface Contact {
   linkedinUrl?: string;
   company?: string;
   role?: string;
-  type: 'recruiter' | 'hiring_manager' | 'referral' | 'other';
-  notes?: string;
+  type: ContactType;
   tags: string[];
   lastContactDate?: Date;
+  nextFollowUpDate?: Date;
+  followUpReminderDays?: number; // Days after last contact to remind (default: 14)
+  applicationIds?: string[]; // Linked applications
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ContactNote {
+  id: string;
+  contactId: string;
+  userId: string;
+  content: string;
+  createdAt: Date;
+  createdBy: string; // userId
+}
+
+export type NetworkingEventType = 
+  | 'meeting'
+  | 'email_sent'
+  | 'email_received'
+  | 'phone_call'
+  | 'referral_given'
+  | 'referral_received'
+  | 'event_attended'
+  | 'coffee_chat'
+  | 'other';
+
+export interface NetworkingEvent {
+  id: string;
+  contactId: string;
+  userId: string;
+  type: NetworkingEventType;
+  title: string;
+  description?: string;
+  date: Date;
+  location?: string;
+  linkedApplicationId?: string; // If related to an application
+  metadata?: Record<string, any>; // Additional data
+  createdAt: Date;
+}
+
+export interface ContactImport {
+  id: string;
+  userId: string;
+  source: 'linkedin' | 'manual' | 'csv';
+  contactsImported: number;
+  contactsSkipped: number;
+  errors?: string[];
+  createdAt: Date;
 }
 
 // ==================== TEMPLATE TYPES ====================
@@ -196,6 +331,20 @@ export interface Analytics {
   thisMonthApplications: number;
 }
 
+// ==================== SENT EMAIL TYPES ====================
+export interface SentEmail {
+  id: string;
+  userId: string;
+  applicationId?: string; // ID of the related application (if any)
+  to: string; // Recipient email
+  subject: string;
+  body: string;
+  attachmentNames: string[]; // Names of attached files
+  emailType?: 'application' | 'confirmation' | 'interview_feedback' | 'feedback_request' | 'offer_accepted' | 'offer_declined';
+  sentAt: Date;
+  createdAt: Date;
+}
+
 // ==================== FORM TYPES ====================
 export interface ApplicationFormData {
   jobTitle: string;
@@ -209,10 +358,17 @@ export interface ApplicationFormData {
   salaryCurrency: string;
   source: JobSource;
   cvId?: string;
+  coverLetterId?: string;
   status: ApplicationStatus;
   priority: 'low' | 'medium' | 'high';
   notes?: string;
   tags: string[];
+  recruiterName?: string;
+  recruiterEmail?: string;
+  recruiterLinkedin?: string;
+  companyEmail?: string; // Company contact email
+  followUpEnabled?: boolean; // Follow-up toggle
+  nextFollowUpDate?: Date; // Next follow-up date
 }
 
 

@@ -1,0 +1,54 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "applications": "Candidaturas",
+    "cvManager": "Gestor de CV",
+    "analytics": "Analíticas",
+    "aiAssistant": "Asistente IA",
+    "gmailIntegration": "Integración Gmail",
+    "settings": "Configuración"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "subtitle": "Resumen de tu búsqueda de empleo",
+    "totalApplications": "Candidaturas Totales",
+    "responseRate": "Tasa de Respuesta",
+    "avgResponseTime": "Tiempo Medio de Respuesta",
+    "thisWeek": "Esta Semana",
+    "days": "días"
+  },
+  "applications": {
+    "title": "Candidaturas",
+    "total": "candidaturas totales",
+    "newApplication": "Nueva Candidatura",
+    "addFirst": "Añadir Primera Candidatura",
+    "noApplications": "Aún no hay candidaturas",
+    "startAdding": "Empieza a añadir tus candidaturas para seguir el progreso",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "optimizeCV": "Optimizar CV con IA",
+    "deleteConfirm": "¿Estás seguro de eliminar esta candidatura?"
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Personaliza la aplicación según tus preferencias",
+    "language": "Idioma",
+    "theme": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "auto": "Automático",
+    "saveChanges": "Guardar Cambios",
+    "saved": "¡Configuración guardada correctamente!"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito"
+  }
+}
+

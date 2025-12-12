@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -18,6 +18,16 @@ import {
   MenuItem,
   useTheme,
   useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  FormControlLabel,
+  Checkbox,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -30,8 +40,17 @@ import {
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   AccountCircle,
+  InstallMobile as InstallIcon,
+  Search as SearchIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
+import { disconnectGmail } from '../services/gmailServiceClient';
+import { usePWAInstall } from '../hooks/useMobile';
+import { prefetchOnHover } from '../services/prefetchService';
+import { Breadcrumbs } from './Breadcrumbs';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const drawerWidth = 240;
 
@@ -40,13 +59,72 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [disconnectGmailChecked, setDisconnectGmailChecked] = useState(false);
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { install, isInstallable } = usePWAInstall();
+  const [installPromptOpen, setInstallPromptOpen] = useState(false);
+  const [hasShownPrompt, setHasShownPrompt] = useState(false);
+
+  // Show install prompt after 3 seconds if app is installable
+  useEffect(() => {
+    if (isInstallable && !hasShownPrompt) {
+      const timer = setTimeout(() => {
+        setInstallPromptOpen(true);
+        setHasShownPrompt(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInstallable, hasShownPrompt]);
+
+  // Global keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'n',
+      ctrlKey: true,
+      action: () => navigate('/applications?action=new'),
+      description: 'Nuova candidatura',
+    },
+    {
+      key: 'f',
+      ctrlKey: true,
+      action: () => {
+        // Focus search if available, otherwise navigate to search
+        const searchInput = document.querySelector('input[type="search"], input[placeholder*="Cerca"], input[placeholder*="Search"]') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+        } else {
+          navigate('/job-search');
+        }
+      },
+      description: 'Cerca',
+    },
+    {
+      key: 'k',
+      ctrlKey: true,
+      action: () => {
+        // Command palette (future feature)
+        console.log('Command palette - da implementare');
+      },
+      description: 'Command palette',
+    },
+    {
+      key: '/',
+      ctrlKey: true,
+      action: () => {
+        // Show shortcuts help
+        alert('Shortcuts:\nCtrl+N: Nuova candidatura\nCtrl+F: Cerca\nCtrl+K: Command palette\nCtrl+/: Mostra shortcuts');
+      },
+      description: 'Mostra shortcuts',
+    },
+  ]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -60,24 +138,49 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setAnchorEl(null);
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    handleProfileMenuClose();
+    setLogoutDialogOpen(true);
+  };
+
+  const handleLogoutConfirm = async () => {
     try {
+      // Disconnect Gmail if checkbox is checked
+      if (disconnectGmailChecked && currentUser) {
+        try {
+          await disconnectGmail(currentUser.uid);
+          console.log('✅ Gmail disconnected during logout');
+        } catch (error) {
+          console.error('❌ Error disconnecting Gmail:', error);
+        }
+      }
+
+      // Logout
       await logout();
       navigate('/login');
     } catch (error) {
       console.error('Errore logout:', error);
+    } finally {
+      setLogoutDialogOpen(false);
+      setDisconnectGmailChecked(false);
     }
-    handleProfileMenuClose();
+  };
+
+  const handleLogoutCancel = () => {
+    setLogoutDialogOpen(false);
+    setDisconnectGmailChecked(false);
   };
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Candidature', icon: <WorkIcon />, path: '/applications' },
-    { text: 'CV Manager', icon: <DescriptionIcon />, path: '/cv-manager' },
-    { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-    { text: 'AI Assistant', icon: <PsychologyIcon />, path: '/ai-assistant', badge: '🤖' },
-    { text: 'Gmail Integration', icon: <EmailIcon />, path: '/gmail', badge: '📧' },
-    { text: 'Impostazioni', icon: <SettingsIcon />, path: '/settings' },
+    { text: t('nav.dashboard'), icon: <DashboardIcon />, path: '/dashboard' },
+    { text: t('nav.applications'), icon: <WorkIcon />, path: '/applications' },
+    { text: t('nav.jobSearch'), icon: <SearchIcon />, path: '/job-search', badge: '🔍' },
+    { text: t('nav.networking'), icon: <PeopleIcon />, path: '/networking', badge: '👥' },
+    { text: t('nav.cvManager'), icon: <DescriptionIcon />, path: '/cv-manager' },
+    { text: t('nav.analytics'), icon: <AnalyticsIcon />, path: '/analytics' },
+    { text: t('nav.aiAssistant'), icon: <PsychologyIcon />, path: '/ai-assistant', badge: '🤖' },
+    { text: t('nav.gmailIntegration'), icon: <EmailIcon />, path: '/gmail', badge: '📧' },
+    { text: t('nav.settings'), icon: <SettingsIcon />, path: '/settings' },
   ];
 
   const drawer = (
@@ -93,6 +196,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <ListItem key={item.text} disablePadding>
             <ListItemButton
               selected={location.pathname === item.path}
+              onMouseEnter={() => {
+                if (currentUser?.uid) {
+                  prefetchOnHover(item.path, currentUser.uid);
+                }
+              }}
               onClick={() => {
                 navigate(item.path);
                 if (isMobile) {
@@ -149,10 +257,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             Job Tracker
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {isInstallable && (
+              <IconButton
+                onClick={async () => {
+                  const installed = await install();
+                  if (installed) {
+                    setInstallPromptOpen(false);
+                  }
+                }}
+                color="inherit"
+                title="Installa app"
+              >
+                <InstallIcon />
+              </IconButton>
+            )}
             <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
               {currentUser?.displayName || currentUser?.email}
             </Typography>
-            <IconButton onClick={handleProfileMenuOpen} color="inherit">
+            <IconButton onClick={handleProfileMenuOpen} color="inherit" sx={{ minWidth: 40, minHeight: 40 }}>
               {currentUser?.photoURL ? (
                 <Avatar src={currentUser.photoURL} sx={{ width: 32, height: 32 }} />
               ) : (
@@ -176,17 +298,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           horizontal: 'right',
         }}
       >
+        {isInstallable && (
+          <MenuItem
+            onClick={async () => {
+              handleProfileMenuClose();
+              const installed = await install();
+              if (!installed) {
+                // Fallback: mostra istruzioni se l'installazione non funziona
+                alert('Per installare l\'app, usa il menu Chrome (3 punti) → "Installa app" o "Aggiungi alla schermata home"');
+              }
+            }}
+          >
+            <ListItemIcon>
+              <InstallIcon fontSize="small" />
+            </ListItemIcon>
+            Installa App
+          </MenuItem>
+        )}
         <MenuItem onClick={() => { navigate('/settings'); handleProfileMenuClose(); }}>
           <ListItemIcon>
             <SettingsIcon fontSize="small" />
           </ListItemIcon>
-          Impostazioni
+          {t('nav.settings')}
         </MenuItem>
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
             <LogoutIcon fontSize="small" />
           </ListItemIcon>
-          Logout
+          {t('nav.logout')}
         </MenuItem>
       </Menu>
 
@@ -224,15 +363,90 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 1.5, sm: 2, md: 3 },
           width: { md: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
           backgroundColor: '#f5f5f5',
+          pb: { xs: 10, md: 3 }, // Extra padding bottom on mobile for FAB
         }}
       >
         <Toolbar />
+        <Breadcrumbs />
         {children}
       </Box>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={handleLogoutCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Conferma Logout</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Sei sicuro di voler uscire?
+          </DialogContentText>
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={disconnectGmailChecked}
+                  onChange={(e) => setDisconnectGmailChecked(e.target.checked)}
+                  color="error"
+                />
+              }
+              label="Disconnetti anche Gmail"
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, ml: 4 }}>
+              ℹ️ Se non selezioni questa opzione, l'integrazione Gmail rimarrà attiva. 
+              Potrai disconnetterla manualmente dalla pagina Integrazione Gmail.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleLogoutCancel} color="primary">
+            Annulla
+          </Button>
+          <Button
+            onClick={handleLogoutConfirm}
+            color="error"
+            variant="contained"
+            autoFocus
+          >
+            Esci
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* PWA Install Prompt */}
+      <Snackbar
+        open={isInstallable && installPromptOpen}
+        autoHideDuration={6000}
+        onClose={() => setInstallPromptOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setInstallPromptOpen(false)}
+          severity="info"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={async () => {
+                const installed = await install();
+                if (installed) {
+                  setInstallPromptOpen(false);
+                }
+              }}
+            >
+              Installa
+            </Button>
+          }
+        >
+          Installa l'app per un'esperienza migliore!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

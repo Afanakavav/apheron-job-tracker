@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -14,14 +14,21 @@ import {
   Alert,
 } from '@mui/material';
 import { CloudUpload, Description } from '@mui/icons-material';
+import { useTranslation } from '../hooks/useTranslation';
 import { uploadCVFile, createCV, validateCVFile } from '../services/cvService';
 import { GAEvents } from '../services/googleAnalytics';
+import { getAvailableFolders, getDefaultFolderForCategory, STANDARD_FOLDERS } from '../utils/documentFolders';
+import type { DocumentFolder } from '../types';
 
 interface CVUploadDialogProps {
   open: boolean;
   onClose: () => void;
   userId: string;
-  onSuccess: () => void;
+  onSuccess: (uploadedCVId: string) => void;
+  suggestedCategory?: string; // Auto-fill category (e.g., 'CV' or 'Cover Letter')
+  autoAssignFolder?: DocumentFolder; // Auto-assign folder (e.g., from application context)
+  lockFolder?: boolean; // If true, folder field is disabled and cannot be changed
+  hideFolderField?: boolean; // If true, folder field is completely hidden (for new applications)
 }
 
 const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
@@ -29,16 +36,63 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
   onClose,
   userId,
   onSuccess,
+  suggestedCategory,
+  autoAssignFolder,
+  lockFolder = false,
+  hideFolderField = false,
 }) => {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(suggestedCategory || '');
+  const [folder, setFolder] = useState<DocumentFolder>('');
+  const [availableFolders, setAvailableFolders] = useState<DocumentFolder[]>(STANDARD_FOLDERS);
+  const [loadingFolders, setLoadingFolders] = useState(false);
   const [description, setDescription] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  // Load available folders when dialog opens
+  useEffect(() => {
+    if (open && userId) {
+      setLoadingFolders(true);
+      getAvailableFolders(userId)
+        .then((folders) => {
+          setAvailableFolders(folders);
+          setLoadingFolders(false);
+        })
+        .catch((err) => {
+          console.error('Error loading folders:', err);
+          setAvailableFolders(STANDARD_FOLDERS);
+          setLoadingFolders(false);
+        });
+    }
+  }, [open, userId]);
+
+  // Update category and folder when suggestedCategory or autoAssignFolder changes
+  useEffect(() => {
+    if (suggestedCategory) {
+      setCategory(suggestedCategory);
+      // Auto-assign folder based on category if no autoAssignFolder is provided
+      if (!autoAssignFolder) {
+        const defaultFolder = getDefaultFolderForCategory(suggestedCategory);
+        setFolder(defaultFolder);
+      }
+    }
+    if (autoAssignFolder) {
+      setFolder(autoAssignFolder);
+    }
+  }, [suggestedCategory, autoAssignFolder]);
+
+  // When hideFolderField is true, ensure folder is set to autoAssignFolder
+  useEffect(() => {
+    if (hideFolderField && autoAssignFolder) {
+      setFolder(autoAssignFolder);
+    }
+  }, [hideFolderField, autoAssignFolder]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -77,6 +131,19 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
       setError('Nome e file sono obbligatori');
       return;
     }
+    
+    // If hideFolderField is true, use autoAssignFolder if folder is not set
+    const finalFolder = folder || (hideFolderField && autoAssignFolder ? autoAssignFolder : '');
+    
+    if (!hideFolderField && !finalFolder) {
+      setError('Cartella è obbligatoria');
+      return;
+    }
+    
+    if (!finalFolder) {
+      setError('Cartella non specificata');
+      return;
+    }
 
     try {
       setUploading(true);
@@ -93,7 +160,7 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
       console.log('File uploaded successfully:', { url, fileName });
 
       // Create CV record in Firestore
-      await createCV(userId, {
+      const cvId = await createCV(userId, {
         name,
         fileName,
         fileUrl: url,
@@ -101,9 +168,10 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
         tags,
         category: category || undefined,
         description: description || undefined,
+        folder: finalFolder, // Required folder
       });
 
-      console.log('CV record created in Firestore');
+      console.log('CV record created in Firestore with ID:', cvId);
       
       // Track analytics event
       GAEvents.uploadCV(file.type);
@@ -112,11 +180,12 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
       setFile(null);
       setName('');
       setCategory('');
+      setFolder('');
       setDescription('');
       setTags([]);
       setUploadProgress(0);
 
-      onSuccess();
+      onSuccess(cvId);
       onClose();
     } catch (err: any) {
       console.error('Error uploading CV:', err);
@@ -133,6 +202,7 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
       setFile(null);
       setName('');
       setCategory('');
+      setFolder('');
       setDescription('');
       setTags([]);
       setError(null);
@@ -143,7 +213,7 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Carica Nuovo CV</DialogTitle>
+      <DialogTitle>{t('cvUpload.title')}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           {error && (
@@ -191,10 +261,10 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
               <Box>
                 <CloudUpload sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
                 <Typography variant="body1">
-                  Clicca per selezionare un file
+                  {t('cvUpload.dropzone')}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  PDF, DOC, DOCX (max 10MB)
+                  {t('cvUpload.supportedFormats')}
                 </Typography>
               </Box>
             )}
@@ -204,7 +274,7 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
             <Box>
               <LinearProgress variant="determinate" value={uploadProgress} />
               <Typography variant="caption" sx={{ mt: 0.5 }}>
-                Caricamento: {uploadProgress.toFixed(0)}%
+                {t('cvUpload.uploading')}: {uploadProgress.toFixed(0)}%
               </Typography>
             </Box>
           )}
@@ -213,46 +283,69 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
           <TextField
             fullWidth
             required
-            label="Nome CV"
+            label={t('cvUpload.name')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={uploading}
-            placeholder="es: CV Software Engineer 2025"
+            placeholder={t('cvUpload.namePlaceholder')}
           />
 
           {/* Category */}
           <TextField
             fullWidth
             select
-            label="Categoria"
+            label={t('cvUpload.category')}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             disabled={uploading}
           >
             <MenuItem value="">Nessuna</MenuItem>
+            <MenuItem value="AI Generated">AI Generated</MenuItem>
+            <MenuItem value="AI Analyzed">AI Analyzed</MenuItem>
             <MenuItem value="Tech">Tech</MenuItem>
             <MenuItem value="Marketing">Marketing</MenuItem>
             <MenuItem value="Sales">Sales</MenuItem>
             <MenuItem value="Design">Design</MenuItem>
             <MenuItem value="Management">Management</MenuItem>
-            <MenuItem value="General">Generale</MenuItem>
+            <MenuItem value="General">General</MenuItem>
           </TextField>
+
+          {/* Folder - Required (hidden if hideFolderField is true) */}
+          {!hideFolderField && (
+            <TextField
+              fullWidth
+              required
+              select
+              label="Cartella"
+              value={folder}
+              onChange={(e) => setFolder(e.target.value as DocumentFolder)}
+              disabled={uploading || loadingFolders || lockFolder}
+              helperText={lockFolder ? "Cartella predefinita per questo tipo di documento" : "Seleziona la cartella in cui salvare il documento"}
+            >
+              {availableFolders.map((folderName) => (
+                <MenuItem key={folderName} value={folderName}>
+                  {folderName}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
 
           {/* Tags */}
           <Box>
             <TextField
               fullWidth
-              label="Tags (premi Invio per aggiungere)"
+              label={t('cvUpload.tags')}
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
+                  e.stopPropagation();
                   handleAddTag();
                 }
               }}
               disabled={uploading}
-              placeholder="es: React, Senior, English"
+              placeholder={t('cvUpload.tagsPlaceholder')}
             />
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
               {tags.map((tag) => (
@@ -271,25 +364,25 @@ const CVUploadDialog: React.FC<CVUploadDialogProps> = ({
             fullWidth
             multiline
             rows={2}
-            label="Descrizione (opzionale)"
+            label={t('cvUpload.description')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={uploading}
-            placeholder="es: CV aggiornato con esperienza React e TypeScript"
+            placeholder={t('cvUpload.descriptionPlaceholder')}
           />
         </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={uploading}>
-          Annulla
+          {t('cvUpload.cancel')}
         </Button>
         <Button
           onClick={handleUpload}
           variant="contained"
-          disabled={!file || !name || uploading}
+          disabled={!file || !name || (!hideFolderField && !folder) || uploading}
           startIcon={<CloudUpload />}
         >
-          {uploading ? 'Caricamento...' : 'Carica CV'}
+          {uploading ? t('cvUpload.uploading') + '...' : t('cvUpload.upload')}
         </Button>
       </DialogActions>
     </Dialog>

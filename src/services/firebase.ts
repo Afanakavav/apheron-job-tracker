@@ -5,6 +5,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -21,6 +22,34 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize Firebase App Check for API key protection
+// App Check protects your backend resources from abuse
+// Even if someone has your API key, they cannot access resources without a valid App Check token
+if (typeof window !== 'undefined') {
+  try {
+    // Get reCAPTCHA site key from environment
+    const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    
+    if (recaptchaSiteKey) {
+      // Initialize App Check with reCAPTCHA v3
+      // In development, App Check uses a debug token (see Firebase Console > App Check > Apps)
+      // In production, it uses reCAPTCHA v3 tokens
+      const appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+        isTokenAutoRefreshEnabled: true
+      });
+      
+      console.log('✅ Firebase App Check initialized');
+    } else {
+      console.warn('⚠️ VITE_RECAPTCHA_SITE_KEY not found. App Check not initialized.');
+    }
+  } catch (error) {
+    // App Check is optional - log warning but don't break the app
+    console.warn('⚠️ Firebase App Check initialization failed:', error);
+    console.warn('   App will work without App Check, but API key protection is reduced');
+  }
+}
 
 // Initialize services
 export const analytics = getAnalytics(app);

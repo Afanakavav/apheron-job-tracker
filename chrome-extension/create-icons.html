@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Resizer - Apheron Extension</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .container {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    input[type="file"] {
+      margin: 20px 0;
+    }
+    canvas {
+      border: 1px solid #ddd;
+      margin: 10px;
+    }
+    button {
+      background: #1976d2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #1565c0;
+    }
+    .preview {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .download-links {
+      margin-top: 20px;
+    }
+    .download-links a {
+      display: inline-block;
+      margin: 5px;
+      padding: 8px 16px;
+      background: #4caf50;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Icon Resizer per Chrome Extension</h1>
+    <p>Carica l'icona originale (192x192) e scarica le versioni ridimensionate</p>
+    
+    <input type="file" id="fileInput" accept="image/png,image/jpeg">
+    
+    <div class="preview" id="preview"></div>
+    
+    <div class="download-links" id="downloadLinks" style="display: none;">
+      <h3>Scarica le icone:</h3>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const downloadLinks = document.getElementById('downloadLinks');
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          preview.innerHTML = '';
+          downloadLinks.innerHTML = '<h3>Scarica le icone:</h3>';
+          downloadLinks.style.display = 'block';
+
+          const sizes = [16, 48, 128];
+          
+          sizes.forEach(size => {
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw resized image
+            ctx.drawImage(img, 0, 0, size, size);
+            
+            // Add to preview
+            const div = document.createElement('div');
+            div.style.margin = '10px';
+            div.innerHTML = `
+              <canvas width="${size}" height="${size}" style="border: 1px solid #ddd;"></canvas>
+              <p>${size}x${size}</p>
+            `;
+            const previewCanvas = div.querySelector('canvas');
+            const previewCtx = previewCanvas.getContext('2d');
+            previewCtx.drawImage(img, 0, 0, size, size);
+            preview.appendChild(div);
+            
+            // Create download link
+            canvas.toBlob((blob) => {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `icon-${size}.png`;
+              a.textContent = `Scarica ${size}x${size}`;
+              a.style.display = 'inline-block';
+              a.style.margin = '5px';
+              a.style.padding = '8px 16px';
+              a.style.background = '#4caf50';
+              a.style.color = 'white';
+              a.style.textDecoration = 'none';
+              a.style.borderRadius = '4px';
+              downloadLinks.appendChild(a);
+            });
+          });
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>
+

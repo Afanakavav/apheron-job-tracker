@@ -89,8 +89,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (firebaseUser) {
         const user = await createUserDocument(firebaseUser);
         setCurrentUser(user);
+        
+        // Save credentials to Chrome extension storage if available
+        if (typeof window !== 'undefined') {
+          try {
+            const token = await firebaseUser.getIdToken();
+            
+            // Method 1: Try direct chrome.storage access
+            if (window.chrome?.storage?.sync) {
+              window.chrome.storage.sync.set({
+                userId: firebaseUser.uid,
+                token: token,
+              });
+              console.log('✅ Credentials saved to Chrome extension storage (direct)');
+            }
+            
+            // Method 2: Try sending message to extension
+            if (window.chrome?.runtime?.id && window.chrome.runtime.sendMessage) {
+              window.chrome.runtime.sendMessage({
+                action: 'saveCredentials',
+                userId: firebaseUser.uid,
+                token: token
+              }, (response: any) => {
+                if (window.chrome?.runtime?.lastError) {
+                  console.warn('⚠️ Extension not available:', window.chrome.runtime.lastError.message);
+                } else if (response?.success) {
+                  console.log('✅ Credentials saved to Chrome extension (via message)');
+                }
+              });
+            }
+            
+            // Method 3: Try postMessage (if extension injected script)
+            if (window.apheronSaveCredentials) {
+              window.apheronSaveCredentials(firebaseUser.uid, token);
+            }
+            
+            // Method 4: PostMessage fallback
+            window.postMessage({
+              type: 'APHERON_SAVE_CREDENTIALS',
+              userId: firebaseUser.uid,
+              token: token
+            }, window.location.origin);
+            
+          } catch (error) {
+            console.warn('Could not save credentials to Chrome extension:', error);
+          }
+        }
       } else {
         setCurrentUser(null);
+        
+        // Clear Chrome extension storage on logout
+        if (typeof window !== 'undefined' && window.chrome?.storage?.sync) {
+          try {
+            window.chrome.storage.sync.remove(['userId', 'token']);
+            console.log('✅ Credentials cleared from Chrome extension storage');
+          } catch (error) {
+            console.warn('Could not clear Chrome extension storage:', error);
+          }
+        }
       }
       setLoading(false);
     });
